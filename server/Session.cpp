@@ -34,7 +34,8 @@ void Session::Send(char *msg, int max_length)
     {
         return;
     }
-    boost::asio::async_write(_socket, boost::asio::buffer(msg, max_length),
+    auto &msgnode = _send_que.front();
+    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
                              [self = shared_from_this()](const boost::system::error_code &error, std::size_t bytes_transferred)
                              {
                                  self->handle_write(error);
