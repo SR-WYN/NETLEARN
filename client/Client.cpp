@@ -1,5 +1,6 @@
 #include <boost/asio.hpp>
 #include <iostream>
+#include <cstring>
 using namespace boost::asio::ip;
 using namespace std;
 
@@ -26,17 +27,19 @@ int main()
         std::cout << "Enter message: ";
         char request[MAX_LENGTH];
         std::cin.getline(request, MAX_LENGTH);
-        size_t request_length = strlen(request);
+        short request_length = static_cast<short>(strlen(request));
         char send_data[MAX_LENGTH] = {0};
-        memcpy(send_data, &request_length, 2);
-        memcpy(send_data + 2, request, request_length);
-        boost::asio::write(sock, boost::asio::buffer(send_data, request_length + 2));
+        short net_length = boost::asio::detail::socket_ops::host_to_network_short(request_length);
+        memcpy(send_data, &net_length, HEAD_LENGTH);
+        memcpy(send_data + HEAD_LENGTH, request, request_length);
+        boost::asio::write(sock, boost::asio::buffer(send_data, request_length + HEAD_LENGTH));
         char reply_head[HEAD_LENGTH];
-        size_t reply_length = boost::asio::read(sock, boost::asio::buffer(reply_head, HEAD_LENGTH));
-        short msglen = 0;
-        memcpy(&msglen, reply_head, HEAD_LENGTH);
+        boost::asio::read(sock, boost::asio::buffer(reply_head, HEAD_LENGTH));
+        short net_msglen = 0;
+        memcpy(&net_msglen, reply_head, HEAD_LENGTH);
+        short msglen = boost::asio::detail::socket_ops::network_to_host_short(net_msglen);
         char msg[MAX_LENGTH] = {0};
-        size_t msg_length = boost::asio::read(sock, boost::asio::buffer(msg, msglen));
+        boost::asio::read(sock, boost::asio::buffer(msg, msglen));
         std::cout << "Reply is: ";
         std::cout.write(msg, msglen) << endl;
         std::cout << "Reply len is " << msglen;

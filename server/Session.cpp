@@ -5,6 +5,9 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <mutex>
+
+#define MAX_SENDQUE 1000
+
 using namespace std;
 
 Session::Session(boost::asio::io_context &ioc, Server *server) 
@@ -21,25 +24,21 @@ Session::~Session()
     cout << "session destruct delete this " << this << endl;
 }
 
-void Session::Send(char *msg, int max_length)
-{
-    bool pending = false;
+void Session::Send(char* msg, int max_length) {
     std::lock_guard<std::mutex> lock(_send_lock);
-    if (_send_que.size() > 0)
-    {
-        pending = true;
-    }
-    _send_que.push(make_shared<MsgNode>(msg, max_length));
-    if (pending)
-    {
+    int send_que_size = _send_que.size();
+    if (send_que_size > MAX_SENDQUE) {
+        cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
         return;
     }
-    auto &msgnode = _send_que.front();
-    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
-                             [self = shared_from_this()](const boost::system::error_code &error, std::size_t bytes_transferred)
-                             {
-                                 self->handle_write(error);
-                             });
+    _send_que.push(make_shared<MsgNode>(msg, max_length));
+    if (send_que_size>0) {
+        return;
+    }
+    auto& msgnode = _send_que.front();
+    auto self = shared_from_this();
+    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len), 
+        [self](const boost::system::error_code &ec, std::size_t) { self->handle_write(ec); });
 }
 
 void Session::Start()
@@ -92,6 +91,8 @@ void Session::handle_read(const boost::system::error_code &error, size_t bytes_t
                 // 获取头部数据
                 short data_len = 0;
                 memcpy(&data_len, _recv_head_node->_data, HEAD_LENGTH);
+                //网络字节序转化为本地字节序
+                data_len=boost::asio::detail::socket_ops::network_to_host_short(data_len);
                 cout << "data_len is " << data_len << endl;
                 // 头部长度非法
                 if (data_len > MAX_LENGTH)
