@@ -11,6 +11,7 @@ class Session : public std::enable_shared_from_this<Session>
 {
 public:
     Session(boost::asio::io_context &ioc, Server *server);
+    ~Session();
     void Send(char *msg, int max_length);
     tcp::socket &Socket() { return _socket; }
     void Start();
