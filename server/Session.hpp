@@ -2,6 +2,7 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <queue>
+#include <memory>
 using boost::asio::ip::tcp;
 
 class Server;
@@ -30,4 +31,7 @@ private:
     std::string _uuid;
     std::queue<std::shared_ptr<MsgNode>> _send_que;
     std::mutex _send_lock;
+    std::shared_ptr<MsgNode> _recv_msg_node;
+    bool _b_head_parse;
+    std::shared_ptr<MsgNode> _recv_head_node;
 };

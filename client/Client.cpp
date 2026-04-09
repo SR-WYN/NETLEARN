@@ -3,7 +3,8 @@
 using namespace boost::asio::ip;
 using namespace std;
 
-constexpr int MAX_LENGTH = 1024;
+#define MAX_LENGTH 1024
+#define HEAD_LENGTH 2
 
 int main()
 {
@@ -19,24 +20,31 @@ int main()
         sock.connect(remote_ep, error);
         if (error)
         {
-            cout << "connect failed,code is " << error.value() << " error msg is " << error.message() << endl;
+            cout << "connect failed, code is " << error.value() << " error msg is " << error.message();
             return 0;
         }
-        
-        cout << "Enter message: ";
+        std::cout << "Enter message: ";
         char request[MAX_LENGTH];
-        cin.getline(request,MAX_LENGTH);
+        std::cin.getline(request, MAX_LENGTH);
         size_t request_length = strlen(request);
-        boost::asio::write(sock,boost::asio::buffer(request,request_length));
-
-        char reply[MAX_LENGTH];
-        size_t reply_length = boost::asio::read(sock,boost::asio::buffer(reply,request_length));
-        cout << "Reply is: ";
-        cout.write(reply,reply_length);
-        cout << '\n';
+        char send_data[MAX_LENGTH] = {0};
+        memcpy(send_data, &request_length, 2);
+        memcpy(send_data + 2, request, request_length);
+        boost::asio::write(sock, boost::asio::buffer(send_data, request_length + 2));
+        char reply_head[HEAD_LENGTH];
+        size_t reply_length = boost::asio::read(sock, boost::asio::buffer(reply_head, HEAD_LENGTH));
+        short msglen = 0;
+        memcpy(&msglen, reply_head, HEAD_LENGTH);
+        char msg[MAX_LENGTH] = {0};
+        size_t msg_length = boost::asio::read(sock, boost::asio::buffer(msg, msglen));
+        std::cout << "Reply is: ";
+        std::cout.write(msg, msglen) << endl;
+        std::cout << "Reply len is " << msglen;
+        std::cout << "\n";
     }
     catch (std::exception &e)
     {
-        std::cerr << "Exception:" << e.what() << endl;
+        std::cerr << "Exception: " << e.what() << endl;
     }
+    return 0;
 }

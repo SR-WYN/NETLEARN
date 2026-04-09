@@ -1,15 +1,17 @@
 #include <string.h>
 
+#define HEAD_LENGTH 2
+
 class MsgNode
 {
     friend class Session;
-
 public:
-    MsgNode(char *msg, int max_len);
+    MsgNode(char * msg, short max_len);
+    MsgNode(short max_len);
     ~MsgNode();
-
+    void Clear();
 private:
-    int _cur_len;
-    int _max_len;
-    char *_data;
+    short _cur_len;
+    short _total_len;
+    char* _data;
 };
