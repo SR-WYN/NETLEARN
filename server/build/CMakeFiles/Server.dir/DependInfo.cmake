@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/asus/NETLEARN/server/MsgNode.cpp" "CMakeFiles/Server.dir/MsgNode.cpp.o" "gcc" "CMakeFiles/Server.dir/MsgNode.cpp.o.d"
   "/home/asus/NETLEARN/server/Server.cpp" "CMakeFiles/Server.dir/Server.cpp.o" "gcc" "CMakeFiles/Server.dir/Server.cpp.o.d"
   "/home/asus/NETLEARN/server/Session.cpp" "CMakeFiles/Server.dir/Session.cpp.o" "gcc" "CMakeFiles/Server.dir/Session.cpp.o.d"
   )

@@ -1,3 +1,0 @@
-/home/asus/NETLEARN/build/CMakeFiles/SyncClient.dir
-/home/asus/NETLEARN/build/CMakeFiles/edit_cache.dir
-/home/asus/NETLEARN/build/CMakeFiles/rebuild_cache.dir

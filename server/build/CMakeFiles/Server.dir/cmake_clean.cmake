@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/Server.dir/MsgNode.cpp.o"
+  "CMakeFiles/Server.dir/MsgNode.cpp.o.d"
   "CMakeFiles/Server.dir/Server.cpp.o"
   "CMakeFiles/Server.dir/Server.cpp.o.d"
   "CMakeFiles/Server.dir/Session.cpp.o"

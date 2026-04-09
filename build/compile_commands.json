@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/asus/NETLEARN/build",
-  "command": "/usr/bin/g++ -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB  -g -std=gnu++17 -Wall -O2 -o CMakeFiles/SyncClient.dir/SyncClient.cpp.o -c /home/asus/NETLEARN/client/SyncClient.cpp",
-  "file": "/home/asus/NETLEARN/client/SyncClient.cpp",
-  "output": "CMakeFiles/SyncClient.dir/SyncClient.cpp.o"
-}
-]

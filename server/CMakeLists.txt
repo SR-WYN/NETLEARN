@@ -12,6 +12,7 @@ find_package(Threads REQUIRED)
 set(SERVER_SOURCES 
     Server.cpp
     Session.cpp
+    MsgNode.cpp
 )
 
 # 生成可执行文件：Server

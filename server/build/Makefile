@@ -129,6 +129,30 @@ Server/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/build
 .PHONY : Server/fast
 
+MsgNode.o: MsgNode.cpp.o
+.PHONY : MsgNode.o
+
+# target to build an object file
+MsgNode.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/MsgNode.cpp.o
+.PHONY : MsgNode.cpp.o
+
+MsgNode.i: MsgNode.cpp.i
+.PHONY : MsgNode.i
+
+# target to preprocess a source file
+MsgNode.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/MsgNode.cpp.i
+.PHONY : MsgNode.cpp.i
+
+MsgNode.s: MsgNode.cpp.s
+.PHONY : MsgNode.s
+
+# target to generate assembly for a file
+MsgNode.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Server.dir/build.make CMakeFiles/Server.dir/MsgNode.cpp.s
+.PHONY : MsgNode.cpp.s
+
 Server.o: Server.cpp.o
 .PHONY : Server.o
 
@@ -186,6 +210,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... Server"
+	@echo "... MsgNode.o"
+	@echo "... MsgNode.i"
+	@echo "... MsgNode.s"
 	@echo "... Server.o"
 	@echo "... Server.i"
 	@echo "... Server.s"
