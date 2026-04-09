@@ -1,0 +1,3 @@
+/home/asus/NETLEARN/client/build/CMakeFiles/Client.dir
+/home/asus/NETLEARN/client/build/CMakeFiles/edit_cache.dir
+/home/asus/NETLEARN/client/build/CMakeFiles/rebuild_cache.dir

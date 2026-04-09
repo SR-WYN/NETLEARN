@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/home/asus/NETLEARN/server/build",
+  "command": "/usr/bin/g++ -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB  -g -std=gnu++17 -Wall -O2 -o CMakeFiles/Server.dir/Server.cpp.o -c /home/asus/NETLEARN/server/Server.cpp",
+  "file": "/home/asus/NETLEARN/server/Server.cpp",
+  "output": "CMakeFiles/Server.dir/Server.cpp.o"
+},
+{
+  "directory": "/home/asus/NETLEARN/server/build",
+  "command": "/usr/bin/g++ -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB  -g -std=gnu++17 -Wall -O2 -o CMakeFiles/Server.dir/Session.cpp.o -c /home/asus/NETLEARN/server/Session.cpp",
+  "file": "/home/asus/NETLEARN/server/Session.cpp",
+  "output": "CMakeFiles/Server.dir/Session.cpp.o"
+}
+]

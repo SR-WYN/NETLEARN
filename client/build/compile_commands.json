@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/asus/NETLEARN/client/build",
+  "command": "/usr/bin/g++ -DBOOST_SYSTEM_DYN_LINK -DBOOST_SYSTEM_NO_LIB  -g -std=gnu++17 -Wall -O2 -o CMakeFiles/Client.dir/Client.cpp.o -c /home/asus/NETLEARN/client/Client.cpp",
+  "file": "/home/asus/NETLEARN/client/Client.cpp",
+  "output": "CMakeFiles/Client.dir/Client.cpp.o"
+}
+]
