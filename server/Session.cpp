@@ -1,4 +1,7 @@
 #include "msg.pb.h"
+#include <json/json.h>
+#include <json/value.h>
+#include <json/reader.h>
 #include "Session.hpp"
 #include "Server.hpp"
 #include "MsgNode.hpp"
@@ -46,25 +49,28 @@ void Session::Send(char *msg, int max_length)
                              { self->handle_write(ec); });
 }
 
-void Session::Send(std::string msg) {
-	std::lock_guard<std::mutex> lock(_send_lock);
-	int send_que_size = _send_que.size();
-	if (send_que_size > MAX_SENDQUE) {
-		std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
-		return;
-	}
+void Session::Send(std::string msg)
+{
+    std::lock_guard<std::mutex> lock(_send_lock);
+    int send_que_size = _send_que.size();
+    if (send_que_size > MAX_SENDQUE)
+    {
+        std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
+        return;
+    }
 
-	_send_que.push(make_shared<MsgNode>(msg.c_str(), msg.length()));
-	if (send_que_size > 0) {
-		return;
-	}
-	auto& msgnode = _send_que.front();
-	auto self = shared_from_this();
-	boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
-		[self](const boost::system::error_code &ec, std::size_t)
-		{
-			self->handle_write(ec);
-		});
+    _send_que.push(make_shared<MsgNode>(msg.c_str(), msg.length()));
+    if (send_que_size > 0)
+    {
+        return;
+    }
+    auto &msgnode = _send_que.front();
+    auto self = shared_from_this();
+    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
+                             [self](const boost::system::error_code &ec, std::size_t)
+                             {
+                                 self->handle_write(ec);
+                             });
 }
 
 void Session::Start()
@@ -150,15 +156,13 @@ void Session::handle_read(const boost::system::error_code &error, size_t bytes_t
                 _recv_msg_node->_data[_recv_msg_node->_total_len] = '\0';
                 // cout << "receive data is " << _recv_msg_node->_data << endl;
                 // // 此处可以调用Send发送测试
-                MsgData msgdata;
-                std::string receive_data;
-                msgdata.ParseFromString(std::string(_recv_msg_node->_data, _recv_msg_node->_total_len));
-                cout << "recevie msg id  is " << msgdata.id() << " msg data is " << msgdata.data() << endl;
-                string return_str = "server has received msg, msg data is " + msgdata.data();
-                MsgData msgreturn;
-                msgreturn.set_id(msgdata.id());
-                msgreturn.set_data(return_str);
-                msgreturn.SerializeToString(&return_str);
+                Json::Reader reader;
+                Json::Value root;
+                reader.parse(std::string(_recv_msg_node->_data, _recv_msg_node->_total_len), root);
+                std::cout << "recevie msg id  is " << root["id"].asInt() << " msg data is "
+                          << root["data"].asString() << endl;
+                root["data"] = "server has received msg,msg data is " + root["data"].asString();
+                string return_str = root.toStyledString();
                 Send(return_str);
                 // 继续轮询剩余未处理数据
                 _b_head_parse = false;

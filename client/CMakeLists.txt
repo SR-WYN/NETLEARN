@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package(JsonCpp REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
 # Protocol Buffers 代码生成
 # 支持将 .proto 文件放在单独的 proto 目录下
@@ -35,6 +36,7 @@ target_include_directories(Client PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIRS}
 )
 
 # 链接库
@@ -42,8 +44,11 @@ target_link_libraries(Client PRIVATE
     Boost::system
     Threads::Threads
     ${Protobuf_LIBRARIES}
-    JsonCpp::JsonCpp
+    ${JSONCPP_LIBRARIES}
 )
 
 # 基础编译选项
+if(JSONCPP_CFLAGS_OTHER)
+    target_compile_options(Client PRIVATE ${JSONCPP_CFLAGS_OTHER})
+endif()
 target_compile_options(Client PRIVATE -Wall -O2)
