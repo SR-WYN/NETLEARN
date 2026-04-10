@@ -1,7 +1,7 @@
 #include "MsgNode.hpp"
 #include <boost/asio.hpp>
 
-MsgNode::MsgNode(char *msg, short max_len) : _total_len(max_len + HEAD_LENGTH), _cur_len(0)
+MsgNode::MsgNode(const char *msg, short max_len) : _total_len(max_len + HEAD_LENGTH), _cur_len(0)
 {
     _data = new char[_total_len + 1]();
     // 转为网络字节序

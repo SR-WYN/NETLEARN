@@ -1,3 +1,4 @@
+#include "msg.pb.h"
 #include "Session.hpp"
 #include "Server.hpp"
 #include "MsgNode.hpp"
@@ -10,7 +11,7 @@
 
 using namespace std;
 
-Session::Session(boost::asio::io_context &ioc, Server *server) 
+Session::Session(boost::asio::io_context &ioc, Server *server)
     : _socket(ioc), _server(server), _b_head_parse(false)
 {
     boost::uuids::uuid a_uuid = boost::uuids::random_generator()();
@@ -24,21 +25,46 @@ Session::~Session()
     cout << "session destruct delete this " << this << endl;
 }
 
-void Session::Send(char* msg, int max_length) {
+void Session::Send(char *msg, int max_length)
+{
     std::lock_guard<std::mutex> lock(_send_lock);
     int send_que_size = _send_que.size();
-    if (send_que_size > MAX_SENDQUE) {
+    if (send_que_size > MAX_SENDQUE)
+    {
         cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
         return;
     }
     _send_que.push(make_shared<MsgNode>(msg, max_length));
-    if (send_que_size>0) {
+    if (send_que_size > 0)
+    {
         return;
     }
-    auto& msgnode = _send_que.front();
+    auto &msgnode = _send_que.front();
     auto self = shared_from_this();
-    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len), 
-        [self](const boost::system::error_code &ec, std::size_t) { self->handle_write(ec); });
+    boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
+                             [self](const boost::system::error_code &ec, std::size_t)
+                             { self->handle_write(ec); });
+}
+
+void Session::Send(std::string msg) {
+	std::lock_guard<std::mutex> lock(_send_lock);
+	int send_que_size = _send_que.size();
+	if (send_que_size > MAX_SENDQUE) {
+		std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
+		return;
+	}
+
+	_send_que.push(make_shared<MsgNode>(msg.c_str(), msg.length()));
+	if (send_que_size > 0) {
+		return;
+	}
+	auto& msgnode = _send_que.front();
+	auto self = shared_from_this();
+	boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
+		[self](const boost::system::error_code &ec, std::size_t)
+		{
+			self->handle_write(ec);
+		});
 }
 
 void Session::Start()
@@ -91,8 +117,8 @@ void Session::handle_read(const boost::system::error_code &error, size_t bytes_t
                 // 获取头部数据
                 short data_len = 0;
                 memcpy(&data_len, _recv_head_node->_data, HEAD_LENGTH);
-                //网络字节序转化为本地字节序
-                data_len=boost::asio::detail::socket_ops::network_to_host_short(data_len);
+                // 网络字节序转化为本地字节序
+                data_len = boost::asio::detail::socket_ops::network_to_host_short(data_len);
                 cout << "data_len is " << data_len << endl;
                 // 头部长度非法
                 if (data_len > MAX_LENGTH)
@@ -122,9 +148,18 @@ void Session::handle_read(const boost::system::error_code &error, size_t bytes_t
                 copy_len += data_len;
                 bytes_transferred -= data_len;
                 _recv_msg_node->_data[_recv_msg_node->_total_len] = '\0';
-                cout << "receive data is " << _recv_msg_node->_data << endl;
-                // 此处可以调用Send发送测试
-                Send(_recv_msg_node->_data, _recv_msg_node->_total_len);
+                // cout << "receive data is " << _recv_msg_node->_data << endl;
+                // // 此处可以调用Send发送测试
+                MsgData msgdata;
+                std::string receive_data;
+                msgdata.ParseFromString(std::string(_recv_msg_node->_data, _recv_msg_node->_total_len));
+                cout << "recevie msg id  is " << msgdata.id() << " msg data is " << msgdata.data() << endl;
+                string return_str = "server has received msg, msg data is " + msgdata.data();
+                MsgData msgreturn;
+                msgreturn.set_id(msgdata.id());
+                msgreturn.set_data(return_str);
+                msgreturn.SerializeToString(&return_str);
+                Send(return_str);
                 // 继续轮询剩余未处理数据
                 _b_head_parse = false;
                 _recv_head_node->Clear();

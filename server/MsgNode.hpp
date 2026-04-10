@@ -6,7 +6,7 @@ class MsgNode
 {
     friend class Session;
 public:
-    MsgNode(char * msg, short max_len);
+    MsgNode(const char * msg, short max_len);
     MsgNode(short max_len);
     ~MsgNode();
     void Clear();
