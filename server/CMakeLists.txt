@@ -27,6 +27,8 @@ set(SERVER_SOURCES
     Server.cpp
     Session.cpp
     MsgNode.cpp
+    LogicSystem.cpp
+    LogicNode.cpp
     ${PROTO_SRCS}
 )
 

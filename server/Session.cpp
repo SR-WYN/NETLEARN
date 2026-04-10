@@ -9,6 +9,9 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <mutex>
 #include "const.h"
+#include <memory>
+#include "LogicSystem.hpp"
+#include "LogicNode.hpp"
 
 using namespace std;
 
@@ -26,20 +29,22 @@ Session::~Session()
     cout << "session destruct delete this " << this << endl;
 }
 
-void Session::Send(char *msg, int max_length)
+void Session::Send(char *msg, int max_length, short msgid)
 {
     std::lock_guard<std::mutex> lock(_send_lock);
     int send_que_size = _send_que.size();
     if (send_que_size > MAX_SENDQUE)
     {
-        cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
+        std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << std::endl;
         return;
     }
-    _send_que.push(make_shared<SendNode>(msg, max_length, 0));
+
+    _send_que.push(make_shared<SendNode>(msg, max_length, msgid));
     if (send_que_size > 0)
     {
         return;
     }
+
     auto &msgnode = _send_que.front();
     auto self = shared_from_this();
     boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
@@ -47,33 +52,27 @@ void Session::Send(char *msg, int max_length)
                              { self->handle_write(ec); });
 }
 
-void Session::Send(std::string msg)
+void Session::Send(std::string msg, short msgid)
 {
     std::lock_guard<std::mutex> lock(_send_lock);
     int send_que_size = _send_que.size();
     if (send_que_size > MAX_SENDQUE)
     {
-        std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
+        std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << std::endl;
         return;
     }
 
-    short msg_id = 0;
-    if (_recv_msg_node)
-    {
-        msg_id = _recv_msg_node->msgId();
-    }
-    _send_que.push(make_shared<SendNode>(msg.c_str(), msg.length(), msg_id));
+    _send_que.push(make_shared<SendNode>(msg.c_str(), static_cast<short>(msg.length()), msgid));
     if (send_que_size > 0)
     {
         return;
     }
+
     auto &msgnode = _send_que.front();
     auto self = shared_from_this();
     boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
                              [self](const boost::system::error_code &ec, std::size_t)
-                             {
-                                 self->handle_write(ec);
-                             });
+                             { self->handle_write(ec); });
 }
 
 void Session::Start()
@@ -135,20 +134,8 @@ void Session::do_read_body(short data_len)
                                 }
 
                                 self->_recv_msg_node->_data[self->_recv_msg_node->_total_len] = '\0';
-                                Json::Reader reader;
-                                Json::Value root;
-                                if (!reader.parse(std::string(self->_recv_msg_node->_data, self->_recv_msg_node->_total_len), root))
-                                {
-                                    std::cout << "json parse failed" << std::endl;
-                                    self->do_read_header();
-                                    return;
-                                }
-
-                                std::cout << "recevie msg id  is " << root["id"].asInt() << " msg data is "
-                                          << root["data"].asString() << std::endl;
-                                root["data"] = "server has received msg,msg data is " + root["data"].asString();
-                                std::string return_str = root.toStyledString();
-                                self->Send(return_str);
+                                LogicSystem::GetInstance()->PostMsgToQueue(
+                                    std::make_shared<LogicNode>(self, self->_recv_msg_node));
                                 self->do_read_header();
                             });
 }

@@ -13,8 +13,8 @@ class Session : public std::enable_shared_from_this<Session>
 public:
     Session(boost::asio::io_context &ioc, Server *server);
     ~Session();
-    void Send(char *msg, int max_length);
-    void Send(std::string msg);
+    void Send(char *msg, int max_length, short msgid);
+    void Send(std::string msg, short msgid);
     tcp::socket &Socket() { return _socket; }
     void Start();
     std::string &GetUuid();

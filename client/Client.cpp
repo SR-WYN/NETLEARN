@@ -27,7 +27,7 @@ void Client::send_request(const std::string &request)
 {
     size_t request_length = request.length();
     vector<char> send_data(HEAD_TOTAL_LEN + request_length);
-    short msg_id = 0;
+    short msg_id = MSG_HELLO_WORD;
     short msg_id_host = boost::asio::detail::socket_ops::host_to_network_short(msg_id);
     short data_len_host = boost::asio::detail::socket_ops::host_to_network_short(static_cast<short>(request_length));
     memcpy(send_data.data(), &msg_id_host, HEAD_ID_LEN);

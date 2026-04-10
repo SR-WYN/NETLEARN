@@ -7,3 +7,8 @@
 #define HEAD_ID_LEN 2
 //头部数据长度
 #define HEAD_DATA_LEN 2
+
+enum MSG_IDS
+{
+    MSG_HELLO_WORD = 1001
+};
