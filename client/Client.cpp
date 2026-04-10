@@ -26,10 +26,13 @@ bool Client::connect(const std::string &address, unsigned short port, boost::sys
 void Client::send_request(const std::string &request)
 {
     size_t request_length = request.length();
-    vector<char> send_data(HEAD_LENGTH + request_length);
-    int request_host_length = boost::asio::detail::socket_ops::host_to_network_short(request_length);
-    memcpy(send_data.data(), &request_host_length, HEAD_LENGTH);
-    memcpy(send_data.data() + HEAD_LENGTH, request.c_str(), request_length);
+    vector<char> send_data(HEAD_TOTAL_LEN + request_length);
+    short msg_id = 0;
+    short msg_id_host = boost::asio::detail::socket_ops::host_to_network_short(msg_id);
+    short data_len_host = boost::asio::detail::socket_ops::host_to_network_short(static_cast<short>(request_length));
+    memcpy(send_data.data(), &msg_id_host, HEAD_ID_LEN);
+    memcpy(send_data.data() + HEAD_ID_LEN, &data_len_host, HEAD_DATA_LEN);
+    memcpy(send_data.data() + HEAD_TOTAL_LEN, request.c_str(), request_length);
     boost::asio::write(_sock, boost::asio::buffer(send_data));
 }
 
@@ -40,7 +43,7 @@ void Client::start_receive()
 
 void Client::do_read_header()
 {
-    auto reply_head = make_shared<array<char, HEAD_LENGTH>>();
+    auto reply_head = make_shared<array<char, HEAD_TOTAL_LEN>>();
     boost::asio::async_read(_sock,
                             boost::asio::buffer(*reply_head),
                             [this, reply_head](const boost::system::error_code &ec, size_t bytes_transferred)
@@ -51,16 +54,26 @@ void Client::do_read_header()
                                     return;
                                 }
 
-                                short msglen = 0;
-                                memcpy(&msglen, reply_head->data(), HEAD_LENGTH);
-                                msglen = boost::asio::detail::socket_ops::network_to_host_short(msglen);
-                                if (msglen <= 0 || msglen > static_cast<short>(MAX_LENGTH))
+                                if (bytes_transferred != HEAD_TOTAL_LEN)
                                 {
-                                    cerr << "invalid reply length: " << msglen << endl;
+                                    cerr << "invalid header length: " << bytes_transferred << endl;
                                     return;
                                 }
 
-                                auto reply_msg = make_shared<vector<char>>(msglen);
+                                short msg_id = 0;
+                                short data_len = 0;
+                                memcpy(&msg_id, reply_head->data(), HEAD_ID_LEN);
+                                memcpy(&data_len, reply_head->data() + HEAD_ID_LEN, HEAD_DATA_LEN);
+                                msg_id = boost::asio::detail::socket_ops::network_to_host_short(msg_id);
+                                data_len = boost::asio::detail::socket_ops::network_to_host_short(data_len);
+                                if (data_len <= 0 || data_len > static_cast<short>(MAX_LENGTH))
+                                {
+                                    cerr << "invalid reply length: " << data_len << endl;
+                                    return;
+                                }
+
+                                cout << "reply msg_id=" << msg_id << " data_len=" << data_len << endl;
+                                auto reply_msg = make_shared<vector<char>>(data_len);
                                 do_read_body(reply_msg);
                             });
 }

@@ -4,13 +4,11 @@
 #include <json/reader.h>
 #include "Session.hpp"
 #include "Server.hpp"
-#include "MsgNode.hpp"
 #include <iostream>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <mutex>
-
-#define MAX_SENDQUE 1000
+#include "const.h"
 
 using namespace std;
 
@@ -19,7 +17,7 @@ Session::Session(boost::asio::io_context &ioc, Server *server)
 {
     boost::uuids::uuid a_uuid = boost::uuids::random_generator()();
     _uuid = boost::uuids::to_string(a_uuid);
-    _recv_head_node = make_shared<MsgNode>(HEAD_LENGTH);
+    _recv_head_node = make_shared<MsgNode>(HEAD_TOTAL_LEN);
     cout << "The uuid is " << _uuid << endl;
 }
 
@@ -37,7 +35,7 @@ void Session::Send(char *msg, int max_length)
         cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
         return;
     }
-    _send_que.push(make_shared<MsgNode>(msg, max_length));
+    _send_que.push(make_shared<SendNode>(msg, max_length, 0));
     if (send_que_size > 0)
     {
         return;
@@ -59,7 +57,12 @@ void Session::Send(std::string msg)
         return;
     }
 
-    _send_que.push(make_shared<MsgNode>(msg.c_str(), msg.length()));
+    short msg_id = 0;
+    if (_recv_msg_node)
+    {
+        msg_id = _recv_msg_node->msgId();
+    }
+    _send_que.push(make_shared<SendNode>(msg.c_str(), msg.length(), msg_id));
     if (send_que_size > 0)
     {
         return;
@@ -88,20 +91,23 @@ void Session::do_read_header()
 {
     auto self = shared_from_this();
     boost::asio::async_read(_socket,
-                            boost::asio::buffer(_recv_head_node->_data, HEAD_LENGTH),
+                            boost::asio::buffer(_recv_head_node->_data, HEAD_TOTAL_LEN),
                             [self](const boost::system::error_code &ec, std::size_t bytes_transferred)
                             {
-                                if (ec || bytes_transferred != HEAD_LENGTH)
+                                if (ec || bytes_transferred != HEAD_TOTAL_LEN)
                                 {
                                     std::cout << "read header failed, error is " << ec.message() << std::endl;
                                     self->_server->ClearSession(self->_uuid);
                                     return;
                                 }
 
+                                short msg_id = 0;
                                 short data_len = 0;
-                                memcpy(&data_len, self->_recv_head_node->_data, HEAD_LENGTH);
+                                memcpy(&msg_id, self->_recv_head_node->_data, HEAD_ID_LEN);
+                                memcpy(&data_len, self->_recv_head_node->_data + HEAD_ID_LEN, HEAD_DATA_LEN);
+                                msg_id = boost::asio::detail::socket_ops::network_to_host_short(msg_id);
                                 data_len = boost::asio::detail::socket_ops::network_to_host_short(data_len);
-                                std::cout << "data_len is " << data_len << std::endl;
+                                std::cout << "msg_id is " << msg_id << " data_len is " << data_len << std::endl;
                                 if (data_len <= 0 || data_len > MAX_LENGTH)
                                 {
                                     std::cout << "invalid data length is " << data_len << std::endl;
@@ -109,7 +115,7 @@ void Session::do_read_header()
                                     return;
                                 }
 
-                                self->_recv_msg_node = make_shared<MsgNode>(data_len);
+                                self->_recv_msg_node = make_shared<RecvNode>(data_len, msg_id);
                                 self->do_read_body(data_len);
                             });
 }

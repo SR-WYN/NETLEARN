@@ -1,5 +1,6 @@
 #pragma once
 
+#include "const.h"
 #include <boost/asio.hpp>
 #include <array>
 #include <memory>
@@ -9,9 +10,6 @@
 class Client
 {
 public:
-    static constexpr std::size_t MAX_LENGTH = 1024;
-    static constexpr std::size_t HEAD_LENGTH = 2;
-
     explicit Client(boost::asio::io_context &ioc);
 
     bool connect(const std::string &address, unsigned short port, boost::system::error_code &ec);

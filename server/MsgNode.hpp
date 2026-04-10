@@ -5,13 +5,31 @@
 class MsgNode
 {
     friend class Session;
+
 public:
-    MsgNode(const char * msg, short max_len);
     MsgNode(short max_len);
     ~MsgNode();
     void Clear();
-private:
     short _cur_len;
     short _total_len;
-    char* _data;
+    char *_data;
+};
+
+class RecvNode : public MsgNode
+{
+public:
+    RecvNode(short max_len, short msg_id);
+    short msgId() const { return _msg_id; }
+
+private:
+    short _msg_id;
+};
+
+class SendNode : public MsgNode
+{
+public:
+    SendNode(const char *msg, short max_len, short msg_id);
+
+private:
+    short _msg_id;
 };

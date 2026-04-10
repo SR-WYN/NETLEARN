@@ -3,10 +3,10 @@
 #include <boost/asio.hpp>
 #include <queue>
 #include <memory>
+#include "MsgNode.hpp"
 using boost::asio::ip::tcp;
 
 class Server;
-class MsgNode;
 
 class Session : public std::enable_shared_from_this<Session>
 {
@@ -24,14 +24,10 @@ private:
     void do_read_body(short data_len);
     void handle_write(const boost::system::error_code &error);
     tcp::socket _socket;
-    enum
-    {
-        MAX_LENGTH = 1024
-    };
     Server *_server;
     std::string _uuid;
-    std::queue<std::shared_ptr<MsgNode>> _send_que;
+    std::queue<std::shared_ptr<SendNode>> _send_que;
     std::mutex _send_lock;
-    std::shared_ptr<MsgNode> _recv_msg_node;
+    std::shared_ptr<RecvNode> _recv_msg_node;
     std::shared_ptr<MsgNode> _recv_head_node;
 };
