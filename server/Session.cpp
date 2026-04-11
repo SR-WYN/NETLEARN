@@ -133,6 +133,7 @@ void Session::do_read_body(short data_len)
                                     return;
                                 }
 
+                                self->_recv_msg_node->_cur_len = static_cast<short>(bytes_transferred);
                                 self->_recv_msg_node->_data[self->_recv_msg_node->_total_len] = '\0';
                                 LogicSystem::GetInstance()->PostMsgToQueue(
                                     std::make_shared<LogicNode>(self, self->_recv_msg_node));

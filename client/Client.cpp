@@ -1,135 +1,109 @@
-#include "msg.pb.h"
-#include "Client.hpp"
+#include <iostream>
+#include <boost/asio.hpp>
+#include <thread>
 #include <json/json.h>
 #include <json/value.h>
 #include <json/reader.h>
-#include <boost/asio.hpp>
-#include <iostream>
-#include <cstring>
-#include <array>
+#include <chrono>
 #include <vector>
-using namespace boost::asio::ip;
+#include <arpa/inet.h>
+#include "const.h"
+
 using namespace std;
+using namespace boost::asio::ip;
 
-Client::Client(boost::asio::io_context &ioc)
-    : _ioc(ioc), _sock(ioc)
-{
-}
-
-bool Client::connect(const std::string &address, unsigned short port, boost::system::error_code &ec)
-{
-    boost::asio::ip::tcp::endpoint remote_ep(boost::asio::ip::address::from_string(address), port);
-    _sock.connect(remote_ep, ec);
-    return !ec;
-}
-
-void Client::send_request(const std::string &request)
-{
-    size_t request_length = request.length();
-    vector<char> send_data(HEAD_TOTAL_LEN + request_length);
-    short msg_id = MSG_HELLO_WORD;
-    short msg_id_host = boost::asio::detail::socket_ops::host_to_network_short(msg_id);
-    short data_len_host = boost::asio::detail::socket_ops::host_to_network_short(static_cast<short>(request_length));
-    memcpy(send_data.data(), &msg_id_host, HEAD_ID_LEN);
-    memcpy(send_data.data() + HEAD_ID_LEN, &data_len_host, HEAD_DATA_LEN);
-    memcpy(send_data.data() + HEAD_TOTAL_LEN, request.c_str(), request_length);
-    boost::asio::write(_sock, boost::asio::buffer(send_data));
-}
-
-void Client::start_receive()
-{
-    do_read_header();
-}
-
-void Client::do_read_header()
-{
-    auto reply_head = make_shared<array<char, HEAD_TOTAL_LEN>>();
-    boost::asio::async_read(_sock,
-                            boost::asio::buffer(*reply_head),
-                            [this, reply_head](const boost::system::error_code &ec, size_t bytes_transferred)
-                            {
-                                if (ec)
-                                {
-                                    cerr << "read header failed, error is " << ec.message() << endl;
-                                    return;
-                                }
-
-                                if (bytes_transferred != HEAD_TOTAL_LEN)
-                                {
-                                    cerr << "invalid header length: " << bytes_transferred << endl;
-                                    return;
-                                }
-
-                                short msg_id = 0;
-                                short data_len = 0;
-                                memcpy(&msg_id, reply_head->data(), HEAD_ID_LEN);
-                                memcpy(&data_len, reply_head->data() + HEAD_ID_LEN, HEAD_DATA_LEN);
-                                msg_id = boost::asio::detail::socket_ops::network_to_host_short(msg_id);
-                                data_len = boost::asio::detail::socket_ops::network_to_host_short(data_len);
-                                if (data_len <= 0 || data_len > static_cast<short>(MAX_LENGTH))
-                                {
-                                    cerr << "invalid reply length: " << data_len << endl;
-                                    return;
-                                }
-
-                                cout << "reply msg_id=" << msg_id << " data_len=" << data_len << endl;
-                                auto reply_msg = make_shared<vector<char>>(data_len);
-                                do_read_body(reply_msg);
-                            });
-}
-
-void Client::do_read_body(std::shared_ptr<std::vector<char>> reply_msg)
-{
-    boost::asio::async_read(_sock,
-                            boost::asio::buffer(*reply_msg),
-                            [reply_msg](const boost::system::error_code &ec, size_t bytes_transferred)
-                            {
-                                if (ec)
-                                {
-                                    cerr << "read body failed, error is " << ec.message() << endl;
-                                    return;
-                                }
-
-                                Json::Reader reader;
-                                Json::Value root;
-                                if (!reader.parse(string(reply_msg->data(), bytes_transferred), root))
-                                {
-                                    cerr << "json parse failed" << endl;
-                                    return;
-                                }
-
-                                cout << "msg id is " << root["id"].asInt() << " msg is " << root["data"].asString() << endl;
-                            });
-}
+std::vector<thread> vec_threads;
 
 int main()
 {
-    while (true)
-        try
-        {
-		// 创建上下文服务
-		boost::asio::io_context ioc;
-		Client client(ioc);
-		boost::system::error_code error;
-		if (!client.connect("127.0.0.1", 10086, error)) {
-			cout << "connect failed, code is " << error.value() << " error msg is " << error.message();
-			return 0;
-		}
+    auto start = std::chrono::high_resolution_clock::now();
 
-		Json::Value root;
-		root["id"] = 1001;
-		root["data"] = "hello world";
-		std::string request = root.toStyledString();
-		client.send_request(request);
-		cout << "begin to receive..." << endl;
+    for (int i = 0; i < 100; i++)
+    {
+        vec_threads.emplace_back([]()
+                                 {
+            try {
+                boost::asio::io_context ioc;
+                tcp::endpoint remote_ep(address::from_string("127.0.0.1"), 10086);
+                tcp::socket sock(ioc);
+                boost::system::error_code error;
 
-		client.start_receive();
-		ioc.run();
-		getchar();
-        }
-        catch (std::exception &e)
-        {
-            std::cerr << "Exception: " << e.what() << endl;
-        }
+                sock.connect(remote_ep, error);
+                if (error) {
+                    cout << "Connect failed: " << error.message() << endl;
+                    return;
+                }
+
+                int j = 0;
+                while (j < 500) {
+                    // --- 1. 构造 JSON 数据 ---
+                    Json::Value root;
+                    root["id"] = 1001 + j;
+                    root["data"] = "hello world";
+                    
+                    // 使用 FastWriter 减少不必要的空格，降低溢出风险
+                    Json::FastWriter writer;
+                    std::string request = writer.write(root);
+                    uint16_t request_length = static_cast<uint16_t>(request.length());
+
+                    // --- 2. 发送数据 (严格控制字节序和偏移) ---
+                    std::vector<char> send_buf(HEAD_TOTAL_LEN + request_length);
+                    uint16_t msgid_net = htons(MSG_HELLO_WORD);
+                    uint16_t msglen_net = htons(request_length);
+
+                    memcpy(send_buf.data(), &msgid_net, HEAD_ID_LEN);
+                    memcpy(send_buf.data() + HEAD_ID_LEN, &msglen_net, HEAD_DATA_LEN);
+                    memcpy(send_buf.data() + HEAD_TOTAL_LEN, request.c_str(), request_length);
+
+                    boost::asio::write(sock, boost::asio::buffer(send_buf));
+
+                    // --- 3. 接收头部 ---
+                    char reply_head[HEAD_TOTAL_LEN];
+                    boost::asio::read(sock, boost::asio::buffer(reply_head, HEAD_TOTAL_LEN));
+
+                    uint16_t r_msgid_net, r_msglen_net;
+                    memcpy(&r_msgid_net, reply_head, HEAD_ID_LEN);
+                    memcpy(&r_msglen_net, reply_head + HEAD_ID_LEN, HEAD_DATA_LEN);
+
+                    uint16_t r_msglen = ntohs(r_msglen_net);
+
+                    // --- 4. 接收消息体 (安全校验) ---
+                    if (r_msglen > MAX_LENGTH) {
+                        throw std::runtime_error("Message too large, possible protocol error.");
+                    }
+
+                    std::vector<char> body_buf(r_msglen);
+                    boost::asio::read(sock, boost::asio::buffer(body_buf.data(), r_msglen));
+
+                    // --- 5. 解析 JSON ---
+                    Json::Reader reader;
+                    Json::Value res_root;
+                    if (reader.parse(body_buf.data(), body_buf.data() + r_msglen, res_root)) {
+                        std::cout << "Receive ID: " << res_root["id"] << " Data: " << res_root["data"] << endl;
+                    }
+                    
+                    j++;
+                }
+            }
+            catch (std::exception& e) {
+                std::cerr << "Exception in thread: " << e.what() << endl;
+            } });
+    }
+
+    for (auto &t : vec_threads)
+    {
+        if (t.joinable())
+            t.join();
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    std::cout << "------------------------------------------" << std::endl;
+    std::cout << "All tasks finished." << std::endl;
+    std::cout << "Time spent: " << duration.count() / 1000.0 << " seconds." << std::endl;
+
+    std::cout << "Press Enter to exit..." << std::endl;
+    getchar();
     return 0;
 }

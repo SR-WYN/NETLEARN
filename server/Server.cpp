@@ -2,6 +2,7 @@
 #include "Session.hpp"
 #include <iostream>
 #include <csignal>
+#include "AsioIOServicePool.hpp"
 using namespace std;
 
 Server::Server(boost::asio::io_context &ioc, short port) : _ioc(ioc), _acceptor(ioc, tcp::endpoint(tcp::v4(), port))
@@ -16,7 +17,8 @@ void Server::ClearSession(std::string uuid)
 
 void Server::start_accept()
 {
-    shared_ptr<Session> new_session = make_shared<Session>(_ioc, this);
+    auto& io_context = AsioIOServicePool::GetInstance()->GetIOService();
+    shared_ptr<Session> new_session = make_shared<Session>(io_context, this);
     _acceptor.async_accept(new_session->Socket(),
                            [this, new_session](const boost::system::error_code &error)
                            {
@@ -43,9 +45,10 @@ int main()
 {
     try
     {
+        auto pool = AsioIOServicePool::GetInstance();
         boost::asio::io_context ioc;
         boost::asio::signal_set signals(ioc,SIGINT,SIGTERM);
-        signals.async_wait([&ioc](auto ec,auto sig_num){
+        signals.async_wait([&ioc,pool](auto ec,auto sig_num){
             if (ec)
             {
                 cerr << "signal wait failed, error is " << ec.message() << endl;
@@ -53,6 +56,7 @@ int main()
             }
             cout << "signal " << sig_num << " received, stopping server..." << endl;
             ioc.stop();
+            pool->Stop();
         });
         Server s(ioc,10086);
         ioc.run();

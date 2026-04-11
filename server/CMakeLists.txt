@@ -29,6 +29,7 @@ set(SERVER_SOURCES
     MsgNode.cpp
     LogicSystem.cpp
     LogicNode.cpp
+    AsioIOServicePool.cpp
     ${PROTO_SRCS}
 )
 
