@@ -1,0 +1,5 @@
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+# 核心设置：大括号换行
+BreakBeforeBraces: Allman
