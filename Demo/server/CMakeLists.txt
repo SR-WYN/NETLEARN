@@ -1,31 +1,40 @@
 cmake_minimum_required(VERSION 3.15)
 project(CoroutineDemo LANGUAGES CXX)
 
-# 1. 核心编译标准设置
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# 让 Trae 等编辑器能够通过 compile_commands.json 获得完美的补全提示
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# 2. 查找依赖
-# 现代 Boost 会提供名为 Boost::xxx 的导入目标（Imported Targets）
 find_package(Boost 1.83 REQUIRED COMPONENTS system)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
-# 3. 定义目标
-add_executable(coroutine_demo Coroutine.cpp)
-
-# 4. 依赖管理（核心规范点）
-# 使用 PRIVATE 关键字实现依赖隔离。
-# Boost::system 会自动传播包含目录、库路径以及必要的编译标志。
-target_link_libraries(coroutine_demo 
-    PRIVATE 
-        Boost::system
+add_executable(coroutine_demo
+    Coroutine.cpp
+    MsgNode.cpp
+    AsioIOServicePool.cpp
+    CServer.cpp
+    CSession.cpp
+    LogicSystem.cpp
 )
 
-# 5. 编译器特性开启
-# 对于 GCC，-fcoroutines 仍是开启 C++20 协程语义转换的必要开关
+target_link_libraries(coroutine_demo
+    PRIVATE
+        Boost::system
+        ${JSONCPP_LIBRARIES}
+)
+
+target_include_directories(coroutine_demo
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${JSONCPP_INCLUDE_DIRS}
+)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(coroutine_demo PRIVATE -fcoroutines)
+endif()
+
+if(JSONCPP_CFLAGS_OTHER)
+    target_compile_options(coroutine_demo PRIVATE ${JSONCPP_CFLAGS_OTHER})
 endif()
