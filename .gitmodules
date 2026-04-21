@@ -4,3 +4,6 @@
 [submodule "CHAT"]
 	path = CHAT
 	url = https://github.com/SR-WYN/CHAT.git
+[submodule "StatusServer"]
+	path = StatusServer
+	url = https://github.com/SR-WYN/StatusServer.git
