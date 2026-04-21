@@ -1,0 +1,6 @@
+[submodule "GateServer"]
+	path = GateServer
+	url = https://github.com/SR-WYN/GateServer.git
+[submodule "CHAT"]
+	path = CHAT
+	url = https://github.com/SR-WYN/CHAT.git
