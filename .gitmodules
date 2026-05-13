@@ -10,3 +10,6 @@
 [submodule "ChatServer"]
 	path = ChatServer
 	url = https://github.com/SR-WYN/ChatServer.git
+[submodule "ChatServer2"]
+	path = ChatServer2
+	url = https://github.com/SR-WYN/ChatServer2.git
