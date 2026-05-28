@@ -1,0 +1,7 @@
+**/.git
+**/.cache
+**/build/
+CHAT/
+tools/bench/.venv/
+**/*.md
+!docker/README.md
