@@ -1,0 +1,22 @@
+{
+    "folders": [
+        {
+            "path": "CHAT"
+        },
+        {
+            "path": "ChatServer"
+        },
+        {
+            "path": "GateServer"
+        },
+        {
+            "path": "StatusServer"
+        },
+        {
+            "path": "FileServer"
+        },
+        {
+            "path": "STD"
+        }
+    ]
+}
