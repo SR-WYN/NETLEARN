@@ -1,6 +1,5 @@
 **/.git
 **/.cache
-**/build/
 CHAT/
 tools/bench/.venv/
 **/*.md
