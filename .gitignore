@@ -2,3 +2,8 @@
 ALL
 tools
 docker
+deploy/libs
+deploy
+.deps/
+.pids/
+.logs/
